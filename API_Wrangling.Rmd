@@ -1,0 +1,154 @@
+---
+title: "API_Wrangling"
+output: html_document
+date: "2025-02-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+# Load required libraries
+library(httr)
+library(jsonlite)
+
+# Set your Visual Crossing API Key
+api_key <- "API_KEY_HERE"
+
+# Function to get weather data from Visual Crossing API
+get_weather_data <- function(lat, lon, date, time, api_key) {
+  # Convert date from DD-MM-YYYY to YYYY-MM-DD
+  date <- as.character(date)
+  formatted_date <- paste(substring(date, 7, 10), substring(date, 1, 2), substring(date, 4, 5), sep="-")
+  formatted_time <- substring(time, 1, 8)
+  if (substring(time, 10, 11) == "PM") {
+    hour <- substring(time, 1, 2)
+    hour <- as.numeric(hour)
+    hour <- hour + 12
+    hour <- as.character(hour)
+    formatted_time <- paste0(hour, substring(time, 3, 8))
+  }
+  
+  # Build API URL
+  location <- paste0(lat, ",", lon)
+  url <- paste0("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/",
+                location, "/", formatted_date,
+                "?key=", api_key, "&include=hours")
+
+  # Fetch data
+  response <- GET(url)
+  
+  if (http_status(response)$category != "Success") {
+    warning(paste("Failed to fetch weather for", date, time, "at", lat, lon))
+    return(c(NA, NA, NA))
+  }
+  
+  data <- content(response, "text", encoding = "UTF-8")
+  parsed <- fromJSON(data, flatten = TRUE)
+  
+  # Extract hourly data for the day
+  hourly_data <- parsed$days$hours[[1]]
+  
+  # Convert time to 24-hour format to match API response
+  time_24h <- strptime(time, "%I:%M:%S %p")
+  time_24h <- strftime(time_24h, format = "%H:00:00")
+  
+  # Find the matching hour
+  matching_row <- hourly_data[format(strptime(hourly_data$datetime, "%H:%M:%S"), "%H:%M:%S") == time_24h, ]
+  
+  if (nrow(matching_row) == 0) {
+    warning(paste("No matching hour found for", date, time, "at", lat, lon))
+    return(c(NA, NA, NA))
+  }
+  
+  # Extract temperature, humidity, and precipitation
+  temperature <- matching_row$temp
+  humidity <- matching_row$humidity
+  precipitation <- matching_row$precip
+  dew <- matching_row$dew
+  windspeed <- matching_row$windspeed
+  windgust <- matching_row$windgust
+  winddir <- matching_row$winddir
+  pressure <- matching_row$pressure
+  cloudcover <- matching_row$cloudcover
+  solarradiation <- matching_row$solarradiation
+  solarenergy <- matching_row$solarenergy
+  uvindex <- matching_row$uvindex
+  conditions <- matching_row$conditions
+  
+  return(c(temperature, humidity, precipitation, dew, windspeed, windgust, winddir, pressure, cloudcover, solarradiation, solarenergy, uvindex, conditions))
+}
+
+# Load your dataset
+my_data <- read.csv("ECOLI_CLEAN.csv", stringsAsFactors = FALSE)
+head(my_data)
+
+my_data <- subset(my_data, 
+                  !is.na(SAMPLE_DATE) & 
+                  !is.na(SAMPLE_TIME) & 
+                  !is.na(LATITUDE) & 
+                  !is.na(LONGITUDE))
+
+# Optionally, you could also remove empty string cases if your dataset has them
+my_data <- subset(my_data,
+                  SAMPLE_DATE != "" & 
+                  SAMPLE_TIME != "" & 
+                  LATITUDE != "" & 
+                  LONGITUDE != "")
+head(my_data)
+
+# Add columns for all the weather data
+my_data$TEMPERATURE <- NA
+my_data$HUMIDITY <- NA
+my_data$PRECIPITATION <- NA
+my_data$DEW <- NA
+my_data$WINDSPEED <- NA
+my_data$WINDGUST <- NA
+my_data$WINDDIR <- NA
+my_data$PRESSURE <- NA
+my_data$CLOUDCOVER <- NA
+my_data$SOLARRADIATION <- NA
+my_data$SOLARENERGY <- NA
+my_data$UVINDEX <- NA
+my_data$CONDITIONS <- NA
+
+# Loop through rows to fetch weather data
+for (i in 1:nrow(my_data)) {
+  cat(sprintf("Fetching weather data for row %d of %d...\n", i, nrow(my_data)))
+  
+  lat <- my_data$LATITUDE[i]
+  lon <- my_data$LONGITUDE[i]
+  date <- my_data$SAMPLE_DATE[i]
+  time <- my_data$SAMPLE_TIME[i]
+  
+  weather_data <- get_weather_data(lat, lon, date, time, api_key)
+  
+  # Assign weather data to the appropriate columns
+  my_data$TEMPERATURE[i] <- weather_data[1]
+  my_data$HUMIDITY[i] <- weather_data[2]
+  my_data$PRECIPITATION[i] <- weather_data[3]
+  my_data$DEW[i] <- weather_data[4]
+  my_data$WINDSPEED[i] <- weather_data[5]
+  my_data$WINDGUST[i] <- weather_data[6]
+  my_data$WINDDIR[i] <- weather_data[7]
+  my_data$PRESSURE[i] <- weather_data[8]
+  my_data$CLOUDCOVER[i] <- weather_data[9]
+  my_data$SOLARRADIATION[i] <- weather_data[10]
+  my_data$SOLARENERGY[i] <- weather_data[11]
+  my_data$UVINDEX[i] <- weather_data[12]
+  my_data$CONDITIONS[i] <- weather_data[13]
+}
+
+# Save enriched dataset
+write.csv(my_data, "ECOLI_W_API.csv", row.names = FALSE)
+
+cat("Weather data added and saved to 'ECOLI_W_API.csv'\n")
+```
+
+```{r}
+my_data
+
+```

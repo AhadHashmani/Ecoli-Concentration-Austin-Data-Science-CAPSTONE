@@ -1,0 +1,131 @@
+---
+title: "Geographical_Visualization"
+output: html_document
+date: "2025-03-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(tidyverse)
+library(ggmap)
+library(sf)
+library(osmdata)
+
+my_data = read.csv("ECOLI_W_API.csv", stringsAsFactors = FALSE)
+head(my_data)
+```
+
+```{r}
+my_data = my_data %>%
+  filter(!is.na(LATITUDE), !is.na(LONGITUDE), !is.na(RESULT..MPN.100ML.))
+```
+
+```{r}
+# Load required libraries
+library(leaflet)
+library(viridis)
+
+# Custom scaling functions
+scaled_radius <- function(x) {
+  return(log(x + 1))  # Apply log scale to compress high values
+}
+
+color_palette <- colorNumeric(palette = "plasma", domain = my_data$RESULT..MPN.100ML.)
+
+leaflet(my_data) %>%
+  addTiles() %>%
+  addCircleMarkers(
+    ~LONGITUDE, ~LATITUDE, 
+    color = ~color_palette(RESULT..MPN.100ML.),
+    radius = ~scaled_radius(RESULT..MPN.100ML.),
+    opacity = 0.7,
+    fill = TRUE,
+    fillOpacity = 0.7,
+    popup = ~paste("E. coli Concentration: ", RESULT..MPN.100ML., "MPN/100ML"),
+    stroke = FALSE
+  ) %>%
+  addLegend(
+    "bottomright", 
+    pal = color_palette,
+    values = my_data$RESULT..MPN.100ML.,
+    title = "E. coli Concentration (MPN/100ML)"
+  ) %>%
+  addControl(
+    html = "<strong>E. coli Concentrations in Austin</strong>",
+    position = "topright"
+  ) %>%
+  addControl(
+    html = "Longitude (x-axis)",
+    position = "bottomleft"
+  ) %>%
+  addControl(
+    html = "Latitude (y-axis)",
+    position = "topleft"
+  ) %>%
+  addMarkers(lng = -97.6986342297922, lat = 30.336339104103, popup = "Buttermilk Branch", label = "Buttermilk Branch") %>%
+  addMarkers(lng = -97.74810283, lat = 30.27060332, popup = "Shoal Creek", label = "Shoal Creek") %>%
+  addMarkers(lng = -97.6092289657427, lat = 30.2921531272374, popup = "Walter E. Long Lake", label = "Walter E. Long Lake") %>%
+  addMarkers(lng = -97.73372, lat = 30.285845, popup = "Waller Creek", label = "Waller Creek") %>%
+  setView(lng = -97.74, lat = 30.27, zoom = 11)
+```
+
+```{r}
+# Load required libraries
+library(ggplot2)
+library(scales)
+
+filtered_data <- my_data %>% 
+  filter(WATERSHED %in% c("Buttermilk Branch", "Shoal Creek", "Walter E. Long Lake", "Waller Creek"))
+
+ggplot(filtered_data, aes(x = RESULT..MPN.100ML.)) + 
+  geom_histogram(binwidth = 2500, fill = "skyblue", color = "black", alpha = 0.7) +
+  facet_wrap(~ WATERSHED, ncol = 2, scales = "free_y") +
+  labs(
+    title = "Spread of E. coli Concentrations Across Random Watersheds",
+    x = "E. coli Concentration (MPN/100ML)",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    strip.background = element_rect(fill = "lightgray")
+  )
+
+```
+
+```{r}
+ggplot(my_data, aes(x = RESULT..MPN.100ML.)) +
+  geom_histogram(binwidth = 2000, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(
+    title = "Distribution of E. coli Concentrations",
+    x = "E. coli Concentration (MPN/100ML)",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(size = 16, face = "bold")
+  )
+```
+
+```{r}
+ggplot(my_data %>% filter(RESULT..MPN.100ML. > 3000), aes(x = RESULT..MPN.100ML.)) +
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(
+    title = "Distribution of High E. coli Concentrations (>3000 MPN/100ML)",
+    x = "E. coli Concentration (MPN/100ML)",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(size = 16, face = "bold")
+  )
+```
+
