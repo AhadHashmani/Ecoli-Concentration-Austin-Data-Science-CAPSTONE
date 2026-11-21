@@ -3,8 +3,15 @@
 library(dplyr)
 library(tidyr)
 
-#Change path to csv
-data <- read.csv("C:\\Users\\adisr\\Downloads\\ECOLI_BATCTERIA_2013-PRESENT_20250228.csv")
+# Repo-root path, with a fallback when the working directory is this script's folder.
+raw_path <- "data/raw/ECOLI_BACTERIA_2013-PRESENT.csv"
+out_path <- "data/processed/ECOLI_CLEAN.csv"
+if (!file.exists(raw_path)) {
+  raw_path <- file.path("..", "..", "data", "raw", "ECOLI_BACTERIA_2013-PRESENT.csv")
+  out_path <- file.path("..", "..", "data", "processed", "ECOLI_CLEAN.csv")
+}
+
+data <- read.csv(raw_path)
 
 #Orig data
 head(data)
@@ -18,4 +25,5 @@ clean <- clean %>% select("LONGITUDE", "LATITUDE", "SAMPLE_DATE", "WATERSHED", "
 clean <- clean %>% separate(SAMPLE_DATE, into = c("SAMPLE_DATE", "SAMPLE_TIME"), sep = " ", extra = "merge")
 
 head(clean)
-write.csv(clean, "C:\\Users\\adisr\\Downloads\\ECOLI_CLEAN.csv", row.names = FALSE)
+dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
+write.csv(clean, out_path, row.names = FALSE)

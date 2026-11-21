@@ -82,8 +82,14 @@ get_weather_data <- function(lat, lon, date, time, api_key) {
   return(c(temperature, humidity, precipitation, dew, windspeed, windgust, winddir, pressure, cloudcover, solarradiation, solarenergy, uvindex, conditions))
 }
 
-# Load your dataset
-my_data <- read.csv("ECOLI_CLEAN.csv", stringsAsFactors = FALSE)
+# Load your dataset (repo root, or this file's folder)
+clean_path <- "data/processed/ECOLI_CLEAN.csv"
+out_path <- "data/processed/ECOLI_W_API.csv"
+if (!file.exists(clean_path)) {
+  clean_path <- file.path("..", "..", "data", "processed", "ECOLI_CLEAN.csv")
+  out_path <- file.path("..", "..", "data", "processed", "ECOLI_W_API.csv")
+}
+my_data <- read.csv(clean_path, stringsAsFactors = FALSE)
 head(my_data)
 
 my_data <- subset(my_data, 
@@ -143,9 +149,10 @@ for (i in 1:nrow(my_data)) {
 }
 
 # Save enriched dataset
-write.csv(my_data, "ECOLI_W_API.csv", row.names = FALSE)
+dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
+write.csv(my_data, out_path, row.names = FALSE)
 
-cat("Weather data added and saved to 'ECOLI_W_API.csv'\n")
+cat("Weather data added and saved to", out_path, "\n")
 ```
 
 ```{r}
