@@ -1,8 +1,13 @@
-#Download, upload, and import "ECOLI_W_API.csv" to RStudio from previous data cleaning steps
-
 # Visualization Code
-install.packages("ggplot2")
 library(ggplot2)
+
+if (!exists("ECOLI_W_API")) {
+  data_path <- "data/processed/ECOLI_W_API.csv"
+  if (!file.exists(data_path)) {
+    data_path <- file.path("..", "..", "data", "processed", "ECOLI_W_API.csv")
+  }
+  ECOLI_W_API <- read.csv(data_path, stringsAsFactors = FALSE)
+}
 
 #For Hexbin plot of Temperature vs. E. coli Concentration
 ggplot(ECOLI_W_API, aes(x = TEMPERATURE, y = RESULT..MPN.100ML.)) +

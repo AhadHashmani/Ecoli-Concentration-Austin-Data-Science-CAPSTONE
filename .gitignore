@@ -1,0 +1,35 @@
+# Data files
+# The CSVs in data/raw and data/processed are small and are committed.
+# Ignore any other local extracts dropped beside them.
+data/raw/*.csv.bak
+data/processed/*.csv.bak
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+__pycache__/
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv
+
+# R
+.Rhistory
+.RData
+.Ruserdata
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# System
+.DS_Store
+Thumbs.db
+*.log

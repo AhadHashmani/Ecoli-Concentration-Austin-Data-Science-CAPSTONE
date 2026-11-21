@@ -33,7 +33,11 @@ remove_outliers <- function(data, column_name) {
 
 
 #CLEANING DATA
-data <- read.csv("C:\\Users\\adisr\\Downloads\\ECOLI_W_API.csv")
+data_path <- "data/processed/ECOLI_W_API.csv"
+if (!file.exists(data_path)) {
+  data_path <- file.path("..", "..", "data", "processed", "ECOLI_W_API.csv")
+}
+data <- read.csv(data_path)
 
 #drop na columns
 data <- data %>% select(-WINDGUST, -SOLARRADIATION, -SOLARENERGY, -UVINDEX)
